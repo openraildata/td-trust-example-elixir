@@ -21,7 +21,7 @@ defmodule NetworkRailExample.MixProject do
 
   defp deps do
     [
-      {:mammoth, "~> 0.4.0"},
+      {:mammoth, "~> 0.4.1"},
       {:jason, "~> 1.3"},
       {:tzdata, "~> 1.1"}
     ]

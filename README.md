@@ -3,6 +3,9 @@ This is a short demonstration script which outputs C-class messages from
 Network Rail's TD feed, or basic information from the train movements
 feed.
 
+This example includes a rudimentary backoff manager, and the connection will
+automatically be restarted by OTP when it drops.
+
 ## Setup
 You must [register an account](https://datafeeds.networkrail.co.uk/ntrod/login)
 for the Network Rail data feeds.

@@ -8,7 +8,6 @@ defmodule NetworkRailExample.Application do
     username = Application.fetch_env!(:networkrailexample, :username)
     password = Application.fetch_env!(:networkrailexample, :password)
     mode = Application.fetch_env!(:networkrailexample, :mode)
-    durable = Application.fetch_env!(:networkrailexample, :durable)
 
     queue = case mode do
       :td -> "/topic/TD_ALL_SIG_AREA"
