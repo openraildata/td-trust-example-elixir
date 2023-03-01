@@ -1,3 +1,0 @@
-defmodule NetworkRailExample do
-
-end
