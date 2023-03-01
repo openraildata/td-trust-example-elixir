@@ -7,16 +7,16 @@ This example includes a rudimentary backoff manager, and the connection will
 automatically be restarted by OTP when it drops.
 
 ## Setup
-You must [register an account](https://datafeeds.networkrail.co.uk/ntrod/login)
-for the Network Rail data feeds.
-When your account is active, you can enable the feeds - log in, go to "my feeds",
-and click on the "TD" link on the left of the page. Select "All Signalling Areas"
-in the "Available" list, move it into "Selected", then save. For TRUST, the
-process is the same, except you'll need to click on "Train Movements", and
-select "All TOCs".
+You must [register an account](https://publicdatafeeds.networkrail.co.uk/ntrod/create-account)
+for the Network Rail data feeds. Verify your email address, then continue.
+
+Note that if you have an account for `datafeeds.networkrail.co.uk`, you may
+need to register an account on the new `publicdatafeeds.networkrail.co.uk`.
+See [here](https://wiki.openraildata.com/index.php?title=NROD_System_Refresh)
+for more information about the data feeds migration.
 
 Create a file named `secrets.exs` in the config directory. This
-file will contain your registered email and password(_not_ your security token).
+file will contain your registered email and password.
 For example, if your email address was "user@example.com" and your password
 was "hunter2", the contents of the file would be:
 ```elixir

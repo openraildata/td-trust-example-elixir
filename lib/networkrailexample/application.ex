@@ -16,7 +16,7 @@ defmodule NetworkRailExample.Application do
 
     children = [
       {NetworkRailExample.BackoffManager, opts: %{}},
-      {NetworkRailExample.CallbackHandler, %{host: 'datafeeds.networkrail.co.uk', port: 61618, user: username, pass: password, queue: queue, id: "td-test"}}
+      {NetworkRailExample.CallbackHandler, %{host: 'publicdatafeeds.networkrail.co.uk', port: 61618, user: username, pass: password, queue: queue, id: "td-test"}}
     ]
 
     opts = [strategy: :one_for_one, name: NetworkRailExample.Supervisor]
