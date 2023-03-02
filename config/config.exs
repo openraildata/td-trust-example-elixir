@@ -1,7 +1,6 @@
 import Config
 
-config :logger, :console,
-  level: :info
+config :logger, :console, level: :info
 
 config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 
