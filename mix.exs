@@ -23,7 +23,8 @@ defmodule NetworkRailExample.MixProject do
     [
       {:barytherium, "~> 0.5.0"},
       {:jason, "~> 1.3"},
-      {:tzdata, "~> 1.1"}
+      {:tzdata, "~> 1.1"},
+      {:credo, "~> 1.7.0-rc.1", only: [:dev, :test], runtime: false}
     ]
   end
 end
