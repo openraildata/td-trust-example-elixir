@@ -1,4 +1,8 @@
 defmodule NetworkRailExample.BackoffManager do
+  @moduledoc """
+  Basic exponential backoff manager
+  """
+
   use GenServer
 
   # 10min ceiling

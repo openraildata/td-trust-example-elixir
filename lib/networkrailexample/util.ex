@@ -1,78 +1,73 @@
 defmodule NetworkRailExample.Util do
-  import String, only: [pad_leading: 2]
+  @moduledoc false
+
+  import String, only: [pad_leading: 2, pad_leading: 3]
   require Logger
 
-  alias Barytherium.Frame
+  alias NetworkRailExample.TRUST.Header
+  alias NetworkRailExample.TD.{BerthMovement, Heartbeat, SignallingState}
 
-  # Berth step      - description moves from "from" berth into "to", "from" berth is erased
-  @c_berth_step "CA"
-  # Berth cancel    - description is erased from "from" berth
-  @c_berth_cancel "CB"
-  # Berth interpose - description is inserted into the "to" berth, previous contents erased
-  @c_berth_interpose "CC"
-  # Heartbeat       - sent periodically by a train describer
-  @c_heartbeat "CT"
-
-  # Signalling update
-  @s_signalling_update "SF"
-  # Signalling refresh
-  @s_signalling_refresh "SG"
-  # Signalling refresh finished
-  @s_signalling_refresh_finished "SH"
-
-  def print_td(td_msg) do
-    {timestamp, ""} = Integer.parse(Map.get(td_msg, "time"))
-
-    datetime_local =
-      elem(DateTime.from_unix(timestamp, :millisecond), 1)
-      |> DateTime.shift_zone!("Europe/London")
-      |> DateTime.to_iso8601()
-
-    area_id = Map.get(td_msg, "area_id")
-    message_type = Map.get(td_msg, "msg_type")
-    description = Map.get(td_msg, "descr", "")
-    from_berth = Map.get(td_msg, "from", "")
-    to_berth = Map.get(td_msg, "to", "")
-
-    "#{datetime_local} [#{message_type}] #{area_id} #{pad_leading(description, 4)} #{pad_leading(from_berth, 5)} -> #{pad_leading(to_berth, 5)}"
-  end
-
-  def print_trust(trust_msg) do
-    body = Map.get(trust_msg, "body")
-    toc = Map.get(body, "toc_id", "")
-    platform = Map.get(body, "platform", "")
+  def format_parsed(
+        {%Header{message_type: message_type, message_queue_timestamp: message_queue_timestamp},
+         body = %{"train_id" => train_id}}
+      ) do
+    datetime = DateTime.to_iso8601(message_queue_timestamp)
+    toc = Map.get(body, "toc_id", "  ")
     loc_stanox = "@" <> Map.get(body, "loc_stanox", "")
-    message_type = trust_msg |> Map.get("header") |> Map.get("msg_type")
+    platform = Map.get(body, "platform", "")
 
-    train_id = Map.get(body, "train_id")
+    origin_stanox_trunc = String.slice(train_id, 0, 2)
     signalling_id = String.slice(train_id, 2, 4)
     class = String.slice(train_id, 6, 1)
+    call_code = String.slice(train_id, 7, 1)
+    train_id_dom = String.slice(train_id, 8, 2)
 
-    "#{train_id} (#{signalling_id} #{class}) #{pad_leading(message_type, 14)} #{toc} #{loc_stanox} #{platform}"
+    "#{datetime} [#{message_type}] (#{train_id}: #{origin_stanox_trunc} #{signalling_id} #{class} #{call_code} #{train_id_dom}) #{toc} #{loc_stanox} #{platform}"
   end
 
-  def single_frame(%Frame{command: :message, body: body, headers: headers}) do
-    header_map = Frame.headers_to_map(headers)
+  def format_parsed(
+        {%Header{message_type: message_type, message_queue_timestamp: message_queue_timestamp},
+         _body}
+      ) do
+    datetime = DateTime.to_iso8601(message_queue_timestamp)
 
-    destination = header_map["destination"]
-    body_decoded = Jason.decode!(body)
+    "#{datetime} [#{message_type}]"
+  end
 
-    text =
-      cond do
-        String.starts_with?(destination, "/topic/TRAIN_MVT_") ->
-          body_decoded
-          |> Enum.map_join("\n", &print_trust/1)
+  def format_parsed(%BerthMovement{
+        time: time,
+        area_id: area_id,
+        message_type: message_type,
+        description: description,
+        from: from,
+        to: to
+      }) do
+    datetime = DateTime.to_iso8601(time)
+    from_berth = from || ""
+    to_berth = to || ""
 
-        String.starts_with?(destination, "/topic/TD_") ->
-          body_decoded
-          |> Enum.map(fn x -> Map.values(x) end)
-          |> List.flatten()
-          |> Enum.filter(fn x ->
-            Map.get(x, "msg_type") in [@c_berth_step, @c_berth_cancel, @c_berth_interpose]
-          end)
-          |> Enum.map_join("\n", &print_td/1)
-      end
+    "#{datetime}   [#{message_type}] #{area_id} #{pad_leading(description, 4)} #{pad_leading(from_berth, 5)} -> #{pad_leading(to_berth, 5)}"
+  end
 
-    IO.puts(text)
+  def format_parsed(%Heartbeat{
+        time: time,
+        area_id: area_id,
+        message_type: message_type,
+        report_time: report_time
+      }) do
+    datetime = DateTime.to_iso8601(time)
+    "#{datetime}   [#{message_type}] #{area_id} #{pad_leading(report_time, 4)}"
+  end
+
+  def format_parsed(%SignallingState{
+        time: time,
+        area_id: area_id,
+        message_type: message_type,
+        address: address,
+        data: data
+      }) do
+    datetime = DateTime.to_iso8601(time)
+
+    "#{datetime}   [#{message_type}] #{area_id} #{pad_leading("", 19)} | #{address |> Integer.to_string(16) |> pad_leading(2, "0")} #{:binary.encode_hex(data) |> pad_leading(8)}"
   end
 end

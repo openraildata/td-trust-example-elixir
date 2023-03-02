@@ -1,8 +1,14 @@
 defmodule NetworkRailExample.CallbackHandler do
+  @moduledoc """
+  Callback genserver for STOMP connections
+  """
+
   use GenServer
   alias NetworkRailExample.BackoffManager
   require Logger
 
+  alias NetworkRailExample.TD
+  alias NetworkRailExample.TRUST
   alias NetworkRailExample.Util
 
   alias Barytherium.Frame
@@ -10,7 +16,7 @@ defmodule NetworkRailExample.CallbackHandler do
   alias Barytherium.Network.Sender
 
   def start_link(
-        [id: id, host: host, port: port, user: user, pass: pass, queue: queue],
+        [id: id, host: host, port: port, user: user, pass: pass, queues: queues],
         link_opts \\ []
       ) do
     GenServer.start_link(
@@ -21,7 +27,7 @@ defmodule NetworkRailExample.CallbackHandler do
         port: port,
         user: user,
         pass: pass,
-        queue: queue
+        queues: queues
       },
       link_opts
     )
@@ -82,21 +88,24 @@ defmodule NetworkRailExample.CallbackHandler do
 
   def handle_cast(
         {:barytherium, :frames, {[frame = %Frame{command: :connected}], sender_pid}},
-        state = %{user: user, queue: queue}
+        state = %{user: user, queues: queues}
       ) do
     Logger.info("Received connected frame: " <> inspect(frame, binaries: :as_strings))
 
-    Sender.write(sender_pid, [
-      %Frame{
-        command: :subscribe,
-        headers: [
-          {"id", "0"},
-          {"destination", queue},
-          {"ack", "client"},
-          {"activemq.subscriptionName", "#{user}-#{queue}"}
-        ]
-      }
-    ])
+    Sender.write(
+      sender_pid,
+      Enum.map(queues, fn queue ->
+        %Frame{
+          command: :subscribe,
+          headers: [
+            {"id", "0"},
+            {"destination", queue},
+            {"ack", "client"},
+            {"activemq.subscriptionName", "#{user}-#{queue}"}
+          ]
+        }
+      end)
+    )
 
     {:noreply, state}
   end
@@ -107,11 +116,30 @@ defmodule NetworkRailExample.CallbackHandler do
   end
 
   def handle_cast({:barytherium, :frames, {frames, sender_pid}}, state) do
-    Enum.each(frames, &Util.single_frame/1)
+    Enum.each(frames, &handle_frame/1)
 
     acknowledge_frame(sender_pid, List.last(frames))
 
     {:noreply, state}
+  end
+
+  def handle_frame(%Frame{command: :message, headers: headers_list, body: body}) do
+    headers = Frame.headers_to_map(headers_list)
+
+    body_decoded = Jason.decode!(body)
+
+    case Map.fetch!(headers, "destination") do
+      "/topic/TRAIN_MVT_ALL_TOC" ->
+        body_decoded
+        |> Enum.map(&TRUST.from_map/1)
+        |> Enum.map(&Util.format_parsed/1)
+        |> Enum.each(&IO.puts/1)
+
+      "/topic/TD_ALL_SIG_AREA" ->
+        TD.from_parsed_body(body_decoded)
+        |> Enum.map(&Util.format_parsed/1)
+        |> Enum.each(&IO.puts/1)
+    end
   end
 
   def acknowledge_frame(sender_pid, %Frame{headers: headers}) do
