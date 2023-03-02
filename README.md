@@ -1,4 +1,4 @@
-# Elixir/Mammoth TD/TRUST demo script
+# Elixir/Barytherium TD/TRUST demo script
 This is a short demonstration script which outputs C-class messages from
 Network Rail's TD feed, or basic information from the train movements
 feed.
@@ -57,7 +57,7 @@ connected.
 
 For this reason, this example does not use durable subscriptions currently.
 In order to use them, you would need to pass additional headers when connecting
-using Mammoth, and when creating the subscription.
+using Barytherium, and when creating the subscription.
 
 See [here](https://wiki.openraildata.com/index.php?title=About_the_Network_Rail_feeds#Durable_subscriptions_via_STOMP)
 for more information.
